@@ -1,0 +1,75 @@
+---
+- name: Purge VirtualBox Completely
+  hosts: local
+  become: yes
+  tasks:
+    - name: Gather list of installed packages
+      command: dpkg --list
+      register: dpkg_list
+      changed_when: false
+
+    - name: Set fact if VirtualBox packages are installed
+      set_fact:
+        vbox_installed: "{{ 'virtualbox' in dpkg_list.stdout }}"
+
+    - name: Remove VirtualBox packages if installed
+      apt:
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - virtualbox-7.0
+        - virtualbox-dkms
+        - virtualbox-ext-pack
+        - virtualbox-guest-additions-iso
+        - virtualbox-qt
+        - virtualbox-guest-utils
+        - virtualbox-guest-x11
+      when: vbox_installed
+
+    - name: Purge VirtualBox-related packages if installed
+      apt:
+        name: "{{ item }}"
+        state: absent
+        purge: yes
+      loop:
+        - virtualbox
+        - virtualbox-dkms
+        - virtualbox-ext-pack
+        - virtualbox-guest-additions-iso
+        - virtualbox-qt
+        - virtualbox-guest-utils
+        - virtualbox-guest-x11
+      when: vbox_installed
+
+    - name: Check if VirtualBox configuration files exist
+      stat:
+        path: "{{ item }}"
+      register: vbox_config_files
+      loop:
+        - /etc/apt/sources.list.d/virtualbox.list
+        - /usr/share/keyrings/oracle-virtualbox-2016.gpg
+        - /var/lib/virtualbox
+        - /var/log/vbox-install.log
+
+    - name: Remove VirtualBox configuration files if they exist
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ vbox_config_files.results }}"
+      when: item.stat.exists
+
+    - name: Check if VirtualBox directories exist
+      stat:
+        path: "{{ item }}"
+      register: vbox_dirs
+      loop:
+        - /usr/lib/virtualbox
+        - /etc/virtualbox
+        - /usr/share/virtualbox
+
+    - name: Clean up remaining VirtualBox directories if they exist
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ vbox_dirs.results }}"
+      when: item.stat.exists
