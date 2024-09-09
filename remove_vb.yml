@@ -53,7 +53,7 @@
 
     - name: Remove VirtualBox configuration files if they exist
       file:
-        path: "{{ item.path }}"
+        path: "{{ item.item }}"
         state: absent
       loop: "{{ vbox_config_files.results }}"
       when: item.stat.exists
@@ -69,7 +69,7 @@
 
     - name: Clean up remaining VirtualBox directories if they exist
       file:
-        path: "{{ item.path }}"
+        path: "{{ item.item }}"
         state: absent
       loop: "{{ vbox_dirs.results }}"
       when: item.stat.exists
